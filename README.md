@@ -1,10 +1,8 @@
 # OpenWrt Configuration Scripts for GL.iNet Flint 2
 
-Shell scripts for configuring and backing up a GL.iNet Flint 2 router running OpenWrt.
+Bash script for backing up a GL.iNet Flint 2 router running OpenWrt.
 
-## Scripts
-- **[setup-git-backup.sh](setup-git-backup.sh)** - Sets up automated git-based backup of router configuration with optional GitHub sync
-- **[openwrt-initial-setup.sh](openwrt-initial-setup.sh)** - Configures multi-VLAN network with segmented zones (Management, WiFi, Services)
+**[setup-git-backup.sh](setup-git-backup.sh)** sets up automated git-based backup of router configuration with optional GitHub sync
 
 ## Quick Install: Git Backup System
 
@@ -27,7 +25,20 @@ This will:
 - Backup all files from `sysupgrade -l` + installed packages
 - The script does nothing if there are no config changes
 
+## Manual Install
+
+```bash
+cd ~
+git clone https://github.com/Ogglord/openwrt-git-backup
+./openwrt-git-backup/setup-git-backup.sh
+```
+
 ---
+
+## Other scripts in this repo:
+
+- **[openwrt-helper.sh](openwrt-helper.sh)** - Interactive menu-driven helper tool for managing, monitoring, and troubleshooting OpenWrt configurations
+- **[openwrt-initial-setup.sh](openwrt-initial-setup.sh)** - Configures multi-VLAN network with segmented zones (Management, WiFi, Services)
 
 ## Network Layout Overview
 
@@ -143,6 +154,61 @@ Before running the configuration script:
 4. **Firewall**: Completely rebuilds firewall from scratch with proper zones
 5. **Wireless**: Attaches WiFi radios to VLAN 100
 6. **Apply**: Commits changes and restarts services
+
+## OpenWrt Helper Tool
+
+The [openwrt-helper.sh](openwrt-helper.sh) script provides an interactive menu-driven interface for managing, monitoring, and troubleshooting your OpenWrt router configuration. It's particularly useful after running the initial setup script to verify and maintain your network.
+
+### Using the Helper
+
+1. Copy the helper script to your router:
+   ```bash
+   scp openwrt-helper.sh root@192.168.99.1:/tmp/
+   ```
+
+2. SSH into the router and run it:
+   ```bash
+   ssh root@192.168.99.1
+   chmod +x /tmp/openwrt-helper.sh
+   /tmp/openwrt-helper.sh
+   ```
+
+### Available Features
+
+The helper provides 16+ menu options organized into categories:
+
+**Configuration Viewing**:
+- Show current network configuration (interfaces, IP addresses, bridges)
+- Show VLAN configuration with detailed port mappings
+- Show firewall zones and forwarding rules
+- Show DHCP configuration and active leases
+- Show WiFi configuration and status
+
+**Network Monitoring**:
+- Show network statistics (interface stats, routing table, active connections)
+- Show connected clients (DHCP leases and ARP table)
+- Show DNS domains and leases by VLAN
+- Test DNS configuration and resolution
+
+**Testing & Verification**:
+- Test inter-VLAN connectivity (ping tests between VLANs)
+- Verify VLAN setup (checks for proper configuration)
+- Test DNS resolution for local and external domains
+
+**Maintenance**:
+- Backup current configuration (timestamped backups)
+- Restart network services (firewall, network, dnsmasq)
+- Run full configuration from script
+
+**Troubleshooting Menu**:
+- Check if VLANs are in kernel
+- Show bridge status
+- Check firewall status
+- Show system log and kernel log
+- Show interface details
+- Check for configuration errors
+
+
 
 ## Post-Installation
 
