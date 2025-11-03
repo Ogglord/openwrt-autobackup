@@ -18,12 +18,12 @@ Or using curl:
 curl -sSL https://raw.githubusercontent.com/Ogglord/openwrt-git-backup/main/setup-git-backup.sh | sh
 ```
 
-This will:
+The install script will:
 - Install git, openssh-client, and tree (if missing)
 - Create `/root/openwrt-backup/` git repository
 - Set up automated backups every 6 hours via cron
-- Backup all files from `sysupgrade -l` + installed packages
-- The script does nothing if there are no config changes
+- Backup all files from `sysupgrade -l` and list the installed packages
+- **Note!** The backup cron job does nothing if there are no config changes
 
 ## Manual Install
 
