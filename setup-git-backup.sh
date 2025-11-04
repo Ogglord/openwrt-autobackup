@@ -136,6 +136,16 @@ cat >> "$REPO_DIR/README.md" << EOREADME
 Total packages installed: $(wc -l < "$BACKUP_DIR/installed-packages.txt")
 
 See [installed-packages.txt](root_dir/installed-packages.txt) for full list.
+
+## Restoring Files
+
+To restore a single file from a specific commit:
+
+\`\`\`bash
+git show <commit>:root_dir/etc/config/network > /etc/config/network
+\`\`\`
+
+Replace \`<commit>\` with the commit hash and adjust the file path as needed.
 EOREADME
 
 # Re-add README since we just modified it
