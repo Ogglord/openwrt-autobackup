@@ -248,7 +248,7 @@ else
     printf "Choice [n]: "
     read -r RUN_BACKUP
 
-    # Default to 'y' if user just presses enter
+    # Default to 'n' if user just presses enter
     RUN_BACKUP=${RUN_BACKUP:-n}
 
     case "$RUN_BACKUP" in
@@ -279,11 +279,12 @@ fi
 # Ensure cron service is enabled and running
 echo ""
 echo "Ensuring cron service is running..."
-if ! /etc/init.d/cron enabled 2>/dev/null; then
-    /etc/init.d/cron enable
-    echo "✓ Cron service enabled"
-fi
 
+# Enable cron service
+/etc/init.d/cron enable 2>/dev/null
+echo "✓ Cron service enabled"
+
+# Start cron if not running
 if ! ps | grep -v grep | grep -q crond; then
     /etc/init.d/cron start
     echo "✓ Cron service started"
