@@ -112,11 +112,7 @@ cat > "$REPO_DIR/README.md" << EOREADME
 
 **Router:** GL.iNet Flint 2 (OpenWrt)
 
-
 **Firmware:** Custom pesa1234 firmware
-
-
-**Date :** $(date '+%Y-%m-%d %H:%M:%S')
 
 ## Contents
 
