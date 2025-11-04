@@ -244,12 +244,19 @@ if [ "$SILENT_MODE" -eq 1 ]; then
     echo "Running initial backup (silent mode)..."
     /root/backup-config.sh
 else
-    echo "Would you like to run an initial backup now? (y/N)"
-    printf "Choice [n]: "
-    read -r RUN_BACKUP
+    # Check if stdin is available (not piped from wget/curl)
+    if [ -t 0 ]; then
+        echo "Would you like to run an initial backup now? (y/N)"
+        printf "Choice [n]: "
+        read -r RUN_BACKUP
 
-    # Default to 'n' if user just presses enter
-    RUN_BACKUP=${RUN_BACKUP:-n}
+        # Default to 'n' if user just presses enter
+        RUN_BACKUP=${RUN_BACKUP:-n}
+    else
+        # stdin not available, default to 'n'
+        echo "Non-interactive mode detected, skipping initial backup"
+        RUN_BACKUP="n"
+    fi
 
     case "$RUN_BACKUP" in
         [Yy]|[Yy][Ee][Ss])
@@ -272,7 +279,7 @@ if crontab -l 2>/dev/null | grep -q "backup-config.sh"; then
     echo "✓ Cron job already configured"
 else
     # Add cron job (every 6 hours)
-    (crontab -l 2>/dev/null; echo "0 */6 * * * /root/backup-config.sh >> /var/log/config-backup.log 2>&1") | crontab -
+    { crontab -l 2>/dev/null || true; echo "0 */6 * * * /root/backup-config.sh >> /var/log/config-backup.log 2>&1"; } | crontab -
     echo "✓ Cron job added (runs every 6 hours)"
 fi
 
