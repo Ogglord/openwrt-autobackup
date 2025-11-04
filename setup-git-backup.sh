@@ -233,6 +233,9 @@ root_dir/etc/ssh/*_key.pub
 **/README
 **/.placeholder
 
+# Ignore tailscale cache
+**/etc/tailscale/derpmap.cached.json
+
 # Ignore backup files (created by UCI)
 **/*.backup.*
 
