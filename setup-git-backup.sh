@@ -1,10 +1,36 @@
 #!/bin/sh
 # Quick Setup Script for Router Configuration Git Backup
 # Run this on your GL.iNet Flint 2 router
-### 
+###
 ### PACKAGES REQUIRED: git openssh-client tree
+###
+### Usage: ./setup-git-backup.sh [--silent]
+###   --silent    Skip prompts and run initial backup automatically
 
 set -e
+
+# Parse arguments
+SILENT_MODE=0
+for arg in "$@"; do
+    case "$arg" in
+        --silent)
+            SILENT_MODE=1
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--silent]"
+            echo ""
+            echo "Options:"
+            echo "  --silent    Skip prompts and run initial backup automatically"
+            echo "  --help      Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $arg"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 echo "=========================================="
 echo "Router Configuration Git Backup Setup"
@@ -212,8 +238,30 @@ echo "✓ .gitignore created"
 
 # Run initial backup
 echo ""
-echo "[5/6] Running initial backup..."
-/root/backup-config.sh
+echo "[5/6] Initial backup..."
+
+if [ "$SILENT_MODE" -eq 1 ]; then
+    echo "Running initial backup (silent mode)..."
+    /root/backup-config.sh
+else
+    echo "Would you like to run an initial backup now? (y/N)"
+    printf "Choice [n]: "
+    read -r RUN_BACKUP
+
+    # Default to 'y' if user just presses enter
+    RUN_BACKUP=${RUN_BACKUP:-n}
+
+    case "$RUN_BACKUP" in
+        [Yy]|[Yy][Ee][Ss])
+            echo "Running initial backup..."
+            /root/backup-config.sh
+            ;;
+        *)
+            echo "Skipping initial backup"
+            echo "You can run it manually later with: /root/backup-config.sh"
+            ;;
+    esac
+fi
 
 # Set up cron job
 echo ""
