@@ -228,6 +228,29 @@ else
     echo "✓ Cron job added (runs every 6 hours)"
 fi
 
+# Ensure cron service is enabled and running
+echo ""
+echo "Ensuring cron service is running..."
+if ! /etc/init.d/cron enabled 2>/dev/null; then
+    /etc/init.d/cron enable
+    echo "✓ Cron service enabled"
+fi
+
+if ! ps | grep -v grep | grep -q crond; then
+    /etc/init.d/cron start
+    echo "✓ Cron service started"
+else
+    echo "✓ Cron service already running"
+fi
+
+# Verify cron is actually running
+if ps | grep -v grep | grep -q crond; then
+    echo "✓ Cron service verified running"
+else
+    echo "⚠ WARNING: Cron service may not be running properly"
+    echo "  Try manually: /etc/init.d/cron start"
+fi
+
 
 # Check if repo already has a remote configured
 cd "$REPO_DIR"
