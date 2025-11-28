@@ -108,11 +108,7 @@ git add -A
 
 # Create README with file tree using git ls-files (only tracked files)
 cat > "$REPO_DIR/README.md" << EOREADME
-# Router Configuration Backup
-
-**Router:** GL.iNet Flint 2 (OpenWrt)
-
-**Firmware:** Custom pesa1234 firmware
+# OpenWrt Configuration Backup
 
 ## Contents
 
@@ -207,7 +203,7 @@ echo "✓ Backup script created: /root/backup-config.sh"
 echo ""
 echo "[3b/6] Copying setup script to repository..."
 if [ -n "$0" ] && [ -f "$0" ]; then
-    cp "$0" "$REPO_DIR/setup-git-backup.sh"
+    cp "$0" "$REPO_DIR/install-autobackup.sh"
     echo "✓ Setup script copied to repository"
 else
     echo "⚠ Could not determine script location, skipping copy"

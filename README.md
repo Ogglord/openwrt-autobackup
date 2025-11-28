@@ -2,26 +2,26 @@
 
 Bash script for backing up a GL.iNet Flint 2 router running OpenWrt.
 
-**[setup-git-backup.sh](setup-git-backup.sh)** sets up automated git-based backup of router configuration with optional GitHub sync
+**[install-autobackup.sh](install-autobackup.sh)** sets up automated git-based backup of router configuration with optional GitHub sync
 
 ## Quick Install: Git Backup System
 
 Bootstrap the backup system directly on your router:
 
 ```bash
-wget -O - https://raw.githubusercontent.com/Ogglord/openwrt-git-backup/main/setup-git-backup.sh | sh
+wget -O - https://raw.githubusercontent.com/Ogglord/openwrt-autobackup/main/install-autobackup.sh | sh
 ```
 
 Or using curl:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Ogglord/openwrt-git-backup/main/setup-git-backup.sh | sh
+curl -sSL https://raw.githubusercontent.com/Ogglord/openwrt-autobackup/main/install-autobackup.sh | sh
 ```
 
 Unattended install:
 
 ```bash
-wget -O - https://raw.githubusercontent.com/Ogglord/openwrt-git-backup/main/setup-git-backup.sh | sh -s -- --silent
+wget -O - https://raw.githubusercontent.com/Ogglord/openwrt-autobackup/main/install-autobackup.sh | sh -s -- --silent
 ```
 
 
@@ -37,14 +37,14 @@ The install script will:
 
 ```bash
 cd ~
-git clone https://github.com/Ogglord/openwrt-git-backup
-./openwrt-git-backup/setup-git-backup.sh
+git clone https://github.com/Ogglord/openwrt-autobackup
+./openwrt-autobackup/install-autobackup.sh
 ```
 
 Or with silent mode:
 
 ```bash
-./openwrt-git-backup/setup-git-backup.sh --silent
+./openwrt-autobackup/install-autobackup.sh --silent
 ```
 
 ---
