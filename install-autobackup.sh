@@ -214,7 +214,11 @@ echo ""
 echo "[4/6] Creating .gitignore..."
 
 cat > "$REPO_DIR/.gitignore" << 'EOFIGNORE'
+# Dont backup private key
 **/id_ed25519
+
+# Dont backup this repo recursively
+root_dir/root/openwrt-backup
 
 # Ignore logs
 **/*.log
