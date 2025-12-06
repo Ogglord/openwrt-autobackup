@@ -214,16 +214,6 @@ echo ""
 echo "[4/6] Creating .gitignore..."
 
 cat > "$REPO_DIR/.gitignore" << 'EOFIGNORE'
-# Ignore sensitive files
-root_dir/etc/dropbear/
-root_dir/etc/ssh/*_key
-root_dir/etc/ssh/*_key.pub
-**/*.key
-**/*_key
-**/*.pem
-**/*.crt
-**/*.csr
-
 # Ignore logs
 **/*.log
 **/README
