@@ -2,7 +2,7 @@
 **/id_ed25519
 
 # Dont backup this repo recursively
-root_dir/root/openwrt-backup
+openwrt-backup/
 
 # Ignore logs
 **/*.log
