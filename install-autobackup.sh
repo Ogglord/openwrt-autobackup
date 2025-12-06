@@ -37,20 +37,93 @@ echo "Router Configuration Git Backup Setup"
 echo "=========================================="
 echo ""
 
+# Function to determine installer directory (cached)
+_get_installer_dir() {
+    if [ -z "${_INSTALLER_DIR:-}" ]; then
+        if [ -f "$0" ] && [ "$0" != "-" ] && [ "$0" != "/dev/stdin" ]; then
+            if [ "$(dirname "$0")" != "." ]; then
+                _INSTALLER_DIR="$(cd "$(dirname "$0")" && pwd)"
+            else
+                _INSTALLER_DIR="$(pwd)"
+            fi
+        else
+            _INSTALLER_DIR=""
+        fi
+    fi
+    echo "$_INSTALLER_DIR"
+}
+
+# Function to get a file from local directory or GitHub
+# Usage: _get_file <filename> [required]
+# Returns path to file on success, exits on failure if required=true
+_get_file() {
+    local filename="$1"
+    local required="${2:-true}"
+    local installer_dir
+    local temp_file="/tmp/$filename"
+    local github_repo="${GITHUB_REPO:-ogge/openwrt-autobackup}"
+    local github_branch="${GITHUB_BRANCH:-main}"
+    local github_url="https://raw.githubusercontent.com/${github_repo}/${github_branch}/${filename}"
+    
+    installer_dir="$(_get_installer_dir)"
+    
+    # Try local file first
+    if [ -n "$installer_dir" ] && [ -f "$installer_dir/$filename" ]; then
+        echo "$installer_dir/$filename"
+        return 0
+    fi
+    
+    # Not found locally, try to download from GitHub
+    if [ -z "$installer_dir" ] || [ ! -f "$installer_dir/$filename" ]; then
+        if [ "$required" = "true" ]; then
+            echo "  Downloading $filename from GitHub..." >&2
+        fi
+        
+        if command -v wget >/dev/null 2>&1; then
+            if wget -q -O "$temp_file" "$github_url" 2>/dev/null; then
+                if [ "$required" = "true" ]; then
+                    echo "  ✓ Downloaded from GitHub" >&2
+                fi
+                echo "$temp_file"
+                return 0
+            fi
+        elif command -v curl >/dev/null 2>&1; then
+            if curl -sSLf -o "$temp_file" "$github_url" 2>/dev/null; then
+                if [ "$required" = "true" ]; then
+                    echo "  ✓ Downloaded from GitHub" >&2
+                fi
+                echo "$temp_file"
+                return 0
+            fi
+        fi
+    fi
+    
+    # Failed to get file
+    if [ "$required" = "true" ]; then
+        echo "✗ Error: $filename not found locally and download from GitHub failed" >&2
+        echo "  URL: $github_url" >&2
+        echo "  You can set GITHUB_REPO environment variable to specify a different repository" >&2
+        echo "  Example: GITHUB_REPO=username/repo $0" >&2
+        exit 1
+    fi
+    
+    return 1
+}
+
 # Check if git is installed
 if ! command -v git >/dev/null 2>&1; then
-    echo "[1/6] Installing Git..."
+    echo "[1/5] Installing Git..."
     apk update
     apk add git openssh-client tree
     echo "✓ Git installed"
 else
-    echo "[1/6] Git already installed"
+    echo "[1/5] Git already installed"
 fi
 
 # Create repository directory
 REPO_DIR="/root/openwrt-backup"
 echo ""
-echo "[2/6] Creating Git repository at $REPO_DIR..."
+echo "[2/5] Creating Git repository at $REPO_DIR..."
 
 mkdir -p "$REPO_DIR"
 cd "$REPO_DIR"
@@ -68,212 +141,33 @@ fi
 
 # Create backup script
 echo ""
-echo "[3/6] Creating backup script..."
+echo "[3/5] Installing backup script..."
 
-cat > /root/backup-config.sh << 'EOFSCRIPT'
-#!/bin/sh
-# Automatic Router Configuration Backup Script
-
-REPO_DIR="/root/openwrt-backup"
-BACKUP_DIR="$REPO_DIR/root_dir"
-
-# Create backup directory structure
-mkdir -p "$BACKUP_DIR"
-
-# Copy configuration files
-echo "Backing up configuration files..."
-
-# Get the list of files that sysupgrade would backup
-# This includes all files marked for preservation during firmware upgrades
-sysupgrade -l | while read -r file; do
-    if [ -f "$file" ]; then
-        # Create the directory structure in backup
-        target_dir="$BACKUP_DIR/$(dirname "$file")"
-        mkdir -p "$target_dir"
-
-        # Copy the file preserving the path structure
-        cp "$file" "$BACKUP_DIR$file"
-        echo "  Backed up: $file"
-    fi
-done
-
-# Backup installed packages list
-apk list --installed > "$BACKUP_DIR/installed-packages.txt"
-
-# Change to repo directory
-cd "$REPO_DIR"
-
-# Add all files to git (respecting .gitignore)
-git add -A
-
-# Create README with file tree using git ls-files (only tracked files)
-cat > "$REPO_DIR/README.md" << EOREADME
-# OpenWrt Configuration Backup
-
-## Contents
-
-\`\`\`
-EOREADME
-
-# Generate tree structure using git ls-files (respects .gitignore)
-if command -v tree >/dev/null 2>&1; then
-    # Use tree command if available, strip root_dir/ prefix
-    git ls-files root_dir/ | sed 's|^root_dir/||' | tree --fromfile -F --noreport >> "$REPO_DIR/README.md"
-else
-    # Fallback: simple sorted list with full paths, strip root_dir/ prefix
-    git ls-files root_dir/ | sed 's|^root_dir/||' | sort >> "$REPO_DIR/README.md"
-fi
-
-cat >> "$REPO_DIR/README.md" << EOREADME
-\`\`\`
-
-## Package Information
-
-Total packages installed: $(wc -l < "$BACKUP_DIR/installed-packages.txt")
-
-See [installed-packages.txt](root_dir/installed-packages.txt) for full list.
-
-## Restoring Files
-
-To restore a single file from a specific commit:
-
-\`\`\`bash
-git show <commit>:root_dir/etc/config/network > /etc/config/network
-\`\`\`
-
-Replace \`<commit>\` with the commit hash and adjust the file path as needed.
-EOREADME
-
-# Re-add README since we just modified it
-git add README.md
-
-# Check if there are changes
-if git status --porcelain | grep -q '^'; then
-    
-    CHANGES=$(git status --short | wc -l)
-    COMMIT_MSG="Auto-backup: $CHANGES file(s) changed - $(date '+%Y-%m-%d %H:%M:%S')"
-    
-    git commit -m "$COMMIT_MSG"
-    
-    echo "✓ Committed: $COMMIT_MSG"
-
-    # Push to remote if configured
-    if git remote | grep -q 'origin'; then
-        echo "Pushing to remote..."
-
-        # Try normal push first
-        if git push origin main 2>&1; then
-            echo "✓ Push succeeded"
-        else
-            echo "⚠ Normal push failed, retrying with --force-with-lease..."
-
-            # Try force-with-lease (safer force push)
-            if git push --force-with-lease origin main 2>&1; then
-                echo "✓ Force push succeeded"
-            else
-                echo "⚠ Force-with-lease failed, trying full force push..."
-
-                # Last resort: force push
-                if git push --force origin main 2>&1; then
-                    echo "✓ Force push succeeded"
-                else
-                    echo "✗ All push attempts failed - check remote configuration"
-                fi
-            fi
-        fi
-    fi
-else
-    echo "✓ No changes detected"
-fi
-
-# Cleanup old commits (keep last 100)
-COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
-if [ "$COMMIT_COUNT" -gt 100 ]; then
-    echo "Pruning old commits..."
-    git gc --aggressive --prune=now
-fi
-
-echo "Backup complete!"
-EOFSCRIPT
-
+BACKUP_SCRIPT_SOURCE="$(_get_file backup-config.sh)"
+cp "$BACKUP_SCRIPT_SOURCE" /root/backup-config.sh
 chmod +x /root/backup-config.sh
-echo "✓ Backup script created: /root/backup-config.sh"
+echo "✓ Backup script installed: /root/backup-config.sh"
 
-# Copy this setup script to the repository for reference
-echo ""
-echo "[3b/6] Copying setup script to repository..."
-if [ -n "$0" ] && [ -f "$0" ]; then
-    cp "$0" "$REPO_DIR/install-autobackup.sh"
-    echo "✓ Setup script copied to repository"
-else
-    echo "⚠ Could not determine script location, skipping copy"
+# Cleanup temp file if we downloaded it
+if [ "$BACKUP_SCRIPT_SOURCE" = "/tmp/backup-config.sh" ]; then
+    rm -f /tmp/backup-config.sh
 fi
-
 # Create .gitignore
 echo ""
-echo "[4/6] Creating .gitignore..."
+echo "[4/5] Creating .gitignore..."
 
-cat > "$REPO_DIR/.gitignore" << 'EOFIGNORE'
-# Dont backup private key
-**/id_ed25519
-
-# Dont backup this repo recursively
-root_dir/root/openwrt-backup
-
-# Ignore logs
-**/*.log
-**/README
-**/.placeholder
-
-# Ignore tailscale cache
-**/etc/tailscale/derpmap.cached.json
-
-# Ignore backup files (created by UCI)
-**/*.backup.*
-
-# Ignore temporary files
-**/*.tmp
-EOFIGNORE
-
+GITIGNORE_SOURCE="$(_get_file example.gitignore)"
+cp "$GITIGNORE_SOURCE" "$REPO_DIR/.gitignore"
 echo "✓ .gitignore created"
 
-# Run initial backup
-echo ""
-echo "[5/6] Initial backup..."
-
-if [ "$SILENT_MODE" -eq 1 ]; then
-    echo "Running initial backup (silent mode)..."
-    /root/backup-config.sh
-else
-    # Check if stdin is available (not piped from wget/curl)
-    if [ -t 0 ]; then
-        echo "Would you like to run an initial backup now? (y/N)"
-        printf "Choice [n]: "
-        read -r RUN_BACKUP
-
-        # Default to 'n' if user just presses enter
-        RUN_BACKUP=${RUN_BACKUP:-n}
-    else
-        # stdin not available, default to 'n'
-        echo "Non-interactive mode detected, skipping initial backup"
-        RUN_BACKUP="n"
-    fi
-
-    case "$RUN_BACKUP" in
-        [Yy]|[Yy][Ee][Ss])
-            echo "Running initial backup..."
-            /root/backup-config.sh
-            ;;
-        *)
-            echo "Skipping initial backup"
-            echo "You can run it manually later with: /root/backup-config.sh"
-            ;;
-    esac
+# Cleanup temp file if we downloaded it
+if [ "$GITIGNORE_SOURCE" = "/tmp/example.gitignore" ]; then
+    rm -f /tmp/example.gitignore
 fi
 
 # Set up cron job
 echo ""
-echo "[6/6] Setting up automatic backups..."
+echo "[5/5] Setting up automatic backups..."
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "backup-config.sh"; then

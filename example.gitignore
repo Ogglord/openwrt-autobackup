@@ -1,0 +1,20 @@
+# Dont backup private key
+**/id_ed25519
+
+# Dont backup this repo recursively
+root_dir/root/openwrt-backup
+
+# Ignore logs
+**/*.log
+**/README
+**/.placeholder
+
+# Ignore tailscale cache
+**/etc/tailscale/derpmap.cached.json
+
+# Ignore backup files (created by UCI)
+**/*.backup.*
+
+# Ignore temporary files
+**/*.tmp
+
