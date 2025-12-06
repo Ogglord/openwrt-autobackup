@@ -214,6 +214,8 @@ echo ""
 echo "[4/6] Creating .gitignore..."
 
 cat > "$REPO_DIR/.gitignore" << 'EOFIGNORE'
+**/id_ed25519
+
 # Ignore logs
 **/*.log
 **/README
